@@ -1,0 +1,339 @@
+
+                <!DOCTYPE html>
+                <html lang="zh">
+                <head>
+                  <meta charset="UTF-8">
+                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                  <meta name="color-scheme" content="light">
+                  <meta name="supported-color-schemes" content="light">
+                  <title>常见问题与自助支持</title>
+                  <style>
+                    *,
+                    *::before,
+                    *::after {
+                      box-sizing: border-box;
+                      margin: 0;
+                    }
+                    .iframe-outer {
+                      position: fixed;
+                      top: 0;
+                      left: 0;
+                      bottom: 0;
+                      right: 0;
+                      display: flex;
+                      justify-content: center;
+                      background-color: #E0E0E0;
+                    }
+                    .iframe-wrapper {
+                      width: 100%;
+                      height: 100%;
+                      margin: 0 auto;
+                      transform-origin: center top;
+                      flex-shrink: 0;
+                    }
+                    #dynamicIframe {
+                      border: none;
+                      width: 100%;
+                      height: 100%;
+                    }
+                  </style>
+                  <script>
+                const width = 1440
+                const height = 1024
+                const resolutionRatio = width && height ? width / height : 1
+                const pageNameMap = {
+                  'home': '首页',
+    'shop': '热植商城',
+    'product_detail': '植物详情页',
+    'shopping_cart': '购物车',
+    'plant_care_center': '养护知识中心',
+    'care_topic_detail': '专题养护详情页',
+    'faq_search': '常见问题与自助支持',
+    'checkout_center': '确认订单结算页',
+    'payment_gateway': '在线支付页面',
+    'order_success': '支付成功反馈页'
+                }
+                const allPageIds = ["home","shop","product_detail","shopping_cart","plant_care_center","care_topic_detail","faq_search","checkout_center","payment_gateway","order_success"]
+                const allFormatPageIdsMap = {"home":"home","shop":"shop","product_detail":"product-detail","shopping_cart":"shopping-cart","plant_care_center":"plant-care-center","care_topic_detail":"care-topic-detail","faq_search":"faq-search","checkout_center":"checkout-center","payment_gateway":"payment-gateway","order_success":"order-success"}
+                const IFRAME_MESSAGE_TYPE = {
+                  iframeNavigation: 'iframeNavigation',
+                }
+                const safeAddEventListener = function Tc(e,t,r,n=!1){e.removeEventListener(t,r,n),e.addEventListener(t,r,n)}
+                const processOnclick = (e,t,r)=>{if(r){const n=Rw(t);if(n.methodName&&Lp(n.methodName,r))return;e.preventDefault(),e.stopPropagation();const s=n.args||[],i=(s==null?void 0:s.find(u=>u))||"";i&&Mp(i)}}
+                const checkIframeMethod = (e,t)=>{try{return typeof t[e]=="function"||typeof t[e]=="function"}catch(r){return!1}}
+                const postIframeMessage = (targetPageId) => {
+                  window.parent.postMessage({
+                    type: IFRAME_MESSAGE_TYPE.iframeNavigation,
+                    targetPageId,
+                  })
+                }
+                const handleIframeLinkClick = (event) => {
+                  const dynamicIframe = document.querySelector('#dynamicIframe')
+                  if (!dynamicIframe?.contentWindow) {
+                    return
+                  }
+                  const link = event.target.closest('a')
+                  const target = event.target
+                  if (link) {
+                    const href = link.getAttribute('href')
+                    const onclick = link.getAttribute('onclick')
+                    if (href && href !== '#' && !href.startsWith('javascript:')) {
+                      event.preventDefault()
+                      event.stopPropagation()
+                      const targetPageId = getKeyByValueObj(allFormatPageIdsMap, href)
+                      if (targetPageId) {
+                        postIframeMessage(targetPageId)
+                      }
+                      return
+                    }
+                    if (onclick) {
+                      processOnclick(event, onclick, iframe.contentWindow, allFormatPageIdsMap)
+                    } else {
+                      event.preventDefault()
+                      event.stopPropagation()
+                    }
+                    return
+                  }
+                  const onclick = target.getAttribute('onclick')
+                  if (onclick) {
+                    processOnclick(event, onclick, iframe.contentWindow, allFormatPageIdsMap)
+                  }
+                }
+                function stringExt(link) {
+                  let s = String(link || '')
+                  s = (s.split('#')[0] || '')
+                  s = (s.split('?')[0] || '')
+                  s = s.trim()
+                  s = s.split('/').filter(Boolean).pop() || ''
+                  const lower = s.toLowerCase()
+                  if (lower.endsWith('.html') || lower.endsWith('.php') || lower.endsWith('.aspx')) {
+                    s = s.slice(0, s.lastIndexOf('.'))
+                  }
+                  return s
+                }
+                function formatHref(href) {
+                  if (!href) {
+                    return ''
+                  }
+                  try {
+                    const url = new URL(href, window.location.href)
+                    const pathname = url.pathname || ''
+                    return stringExt(pathname)
+                  } catch {
+                    return stringExt(href)
+                  }
+                }
+                function getKeyByValueObj(obj, value) {
+                  const newValue = formatHref(value)
+                  const keyFind = Object.keys(obj).find(k => k === newValue)
+                  if (keyFind) {
+                    return keyFind
+                  }
+                  return Object.keys(obj).find(k => obj[k] === newValue)
+                }
+                function setIframeSize(w, h) {
+                  const currentContainerRadio = w / h
+                  let widthValue = w
+                  let heightValue = h
+                  let zoom = 1
+                  if (currentContainerRadio > resolutionRatio) {
+                    widthValue = h * resolutionRatio
+                    heightValue = h
+                  } else {
+                    widthValue = w
+                    heightValue = w / resolutionRatio
+                  }
+                  zoom = width ? widthValue / width : 1
+                  return {
+                    width: widthValue / zoom + 'px',
+                    height: heightValue / zoom + 'px',
+                    zoom,
+                  }
+                }
+                function adjustIframeSize() {
+                  const iframeWrapper = document.querySelector(".iframe-wrapper")
+                  const { width, height, zoom } = setIframeSize(window.innerWidth, window.innerHeight)
+                  iframeWrapper.style.height = height
+                  iframeWrapper.style.width = width
+                  iframeWrapper.style.transform = 'scale(' + zoom + ')'
+                }
+                function sanitizeFilename(name) {
+                  return name.replace(/[\/:*?"<>|]/g, '_')
+                }
+                function handlePostMessage(event) {
+                  if (!event.data) {
+                    return
+                  }
+                  const { type, targetPageId } = event.data
+                  const targetPageName = pageNameMap[targetPageId]
+                  if (type === "iframeNavigation" && targetPageId && targetPageName) {
+                    window.location.href = targetPageName + '.html'
+                  }
+                }
+                function setupIframeEvents() {
+                  const iframe = document.getElementById('dynamicIframe')
+                  if (iframe && iframe.contentWindow && iframe.contentWindow.document) {
+                    safeAddEventListener(iframe.contentWindow.document, 'click', handleIframeLinkClick, true)
+                  } else {
+                    setTimeout(setupIframeEvents, 100)
+                  }
+                }
+                window.addEventListener('message', handlePostMessage)
+                window.onload = function() {
+                  adjustIframeSize()
+                  setupIframeEvents()
+                }
+                window.onresize = adjustIframeSize
+                window.onunload = () => {
+                  window.removeEventListener('message', handlePostMessage)
+                }
+              </script>
+                </head>
+                <body>
+                  <div class="iframe-outer">
+                    <div class="iframe-wrapper">
+                      <iframe id="dynamicIframe" srcdoc='<html data-source-file="src/layouts/BaseLayout.astro" data-source-line-start="11" data-source-line-end="21" lang="en"><head data-source-file="src/layouts/BaseLayout.astro" data-source-line-start="12" data-source-line-end="17"><script>(function(){
+      function stringExt(link) {
+        let s = String(link || &#39;&#39;)
+        s = (s.split(&#39;#&#39;)[0] || &#39;&#39;)
+        s = (s.split(&#39;?&#39;)[0] || &#39;&#39;)
+        s = s.trim()
+        s = s.split(&#39;/&#39;).filter(Boolean).pop() || &#39;&#39;
+        const lower = s.toLowerCase()
+        if (lower.endsWith(&#39;.html&#39;) || lower.endsWith(&#39;.php&#39;) || lower.endsWith(&#39;.aspx&#39;)) {
+          s = s.slice(0, s.lastIndexOf(&#39;.&#39;))
+        }
+        return s
+      }
+      function formatHref(href) {
+        if (!href) {
+          return &#39;&#39;
+        }
+        try {
+          const url = new URL(href, window.location.href)
+          const pathname = url.pathname || &#39;&#39;
+          return stringExt(pathname)
+        } catch {
+          return stringExt(href)
+        }
+      }
+      function getKeyByValueObj(obj, value) {
+        const newValue = formatHref(value)
+        const keyFind = Object.keys(obj).find(k => k === newValue)
+        if (keyFind) {
+          return keyFind
+        }
+        return Object.keys(obj).find(k => obj[k] === newValue)
+      }
+      function emit(to, source){
+        try {
+          if (window.parent) {
+            const allFormatPageIdsMap = {"home":"home","shop":"shop","product_detail":"product-detail","shopping_cart":"shopping-cart","plant_care_center":"plant-care-center","care_topic_detail":"care-topic-detail","faq_search":"faq-search","checkout_center":"checkout-center","payment_gateway":"payment-gateway","order_success":"order-success"}
+            const IFRAME_MESSAGE_TYPE = {
+              iframeNavigation: &#39;iframeNavigation&#39;,
+            }
+            const targetPageId = getKeyByValueObj(allFormatPageIdsMap, String(to || &#39;&#39;))
+            if (targetPageId) {
+              window.parent.postMessage({
+                type: IFRAME_MESSAGE_TYPE.iframeNavigation,
+                targetPageId,
+              }, &#39;*&#39;)
+            }
+          }
+        } catch(e) {}
+      }
+      try{
+        if (&#39;navigation&#39; in window &amp;&amp; window.navigation &amp;&amp; typeof window.navigation.addEventListener===&#39;function&#39;){
+          window.navigation.addEventListener(&#39;navigate&#39;, function(e){
+            try{
+              var url = (e.destination &amp;&amp; e.destination.url) || &#39;&#39;;
+              if (e.canIntercept &amp;&amp; typeof e.intercept===&#39;function&#39;){ e.intercept({ handler:function(){} }) }
+              else if (e.preventDefault){ e.preventDefault() }
+              emit(url)
+            }catch(_){}
+          })
+        }
+      }catch(_){}
+    })();</script><meta name="supported-color-schemes" content="light"><meta name="color-scheme" content="light"><style>
+      :root, html, body { color-scheme: light; }
+      html { forced-color-adjust: none; }
+    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Built with Astro">
+    <title data-source-file="src/layouts/BaseLayout.astro" data-source-line-start="16" data-source-line-end="16">常见问题与自助支持 - 棠野仙踪</title>
+  <link rel="stylesheet" href="./assets/html/106422/care-topic-detail.DlRRkh6X.css"><script src="./assets/static/uxbot/25_6/holder.js"></script></head>
+  <body data-source-file="src/layouts/BaseLayout.astro" data-source-line-start="18" data-source-line-end="20">
+    
+  <style>astro-island,astro-slot,astro-static-slot{display:contents}</style><script>(()=>{var e=async t=>{await(await t())()};(self.Astro||(self.Astro={})).load=e;window.dispatchEvent(new Event("astro:load"));})();</script><script>(()=>{var A=Object.defineProperty;var g=(i,o,a)=>o in i?A(i,o,{enumerable:!0,configurable:!0,writable:!0,value:a}):i[o]=a;var d=(i,o,a)=>g(i,typeof o!="symbol"?o+"":o,a);{let i={0:t=>m(t),1:t=>a(t),2:t=>new RegExp(t),3:t=>new Date(t),4:t=>new Map(a(t)),5:t=>new Set(a(t)),6:t=>BigInt(t),7:t=>new URL(t),8:t=>new Uint8Array(t),9:t=>new Uint16Array(t),10:t=>new Uint32Array(t),11:t=>1/0*t},o=t=>{let[l,e]=t;return l in i?i[l](e):void 0},a=t=>t.map(o),m=t=>typeof t!="object"||t===null?t:Object.fromEntries(Object.entries(t).map(([l,e])=>[l,o(e)]));class y extends HTMLElement{constructor(){super(...arguments);d(this,"Component");d(this,"hydrator");d(this,"hydrate",async()=>{var b;if(!this.hydrator||!this.isConnected)return;let e=(b=this.parentElement)==null?void 0:b.closest("astro-island[ssr]");if(e){e.addEventListener("astro:hydrate",this.hydrate,{once:!0});return}let c=this.querySelectorAll("astro-slot"),n={},h=this.querySelectorAll("template[data-astro-template]");for(let r of h){let s=r.closest(this.tagName);s!=null&amp;&amp;s.isSameNode(this)&amp;&amp;(n[r.getAttribute("data-astro-template")||"default"]=r.innerHTML,r.remove())}for(let r of c){let s=r.closest(this.tagName);s!=null&amp;&amp;s.isSameNode(this)&amp;&amp;(n[r.getAttribute("name")||"default"]=r.innerHTML)}let p;try{p=this.hasAttribute("props")?m(JSON.parse(this.getAttribute("props"))):{}}catch(r){let s=this.getAttribute("component-url")||"<unknown>",v=this.getAttribute("component-export");throw v&amp;&amp;(s+=` (export ${v})`),console.error(`[hydrate] Error parsing props for component ${s}`,this.getAttribute("props"),r),r}let u;await this.hydrator(this)(this.Component,p,n,{client:this.getAttribute("client")}),this.removeAttribute("ssr"),this.dispatchEvent(new CustomEvent("astro:hydrate"))});d(this,"unmount",()=>{this.isConnected||this.dispatchEvent(new CustomEvent("astro:unmount"))})}disconnectedCallback(){document.removeEventListener("astro:after-swap",this.unmount),document.addEventListener("astro:after-swap",this.unmount,{once:!0})}connectedCallback(){if(!this.hasAttribute("await-children")||document.readyState==="interactive"||document.readyState==="complete")this.childrenConnectedCallback();else{let e=()=>{document.removeEventListener("DOMContentLoaded",e),c.disconnect(),this.childrenConnectedCallback()},c=new MutationObserver(()=>{var n;((n=this.lastChild)==null?void 0:n.nodeType)===Node.COMMENT_NODE&amp;&amp;this.lastChild.nodeValue==="astro:end"&amp;&amp;(this.lastChild.remove(),e())});c.observe(this,{childList:!0}),document.addEventListener("DOMContentLoaded",e)}}async childrenConnectedCallback(){let e=this.getAttribute("before-hydration-url");e&amp;&amp;await import(e),this.start()}async start(){let e=JSON.parse(this.getAttribute("opts")),c=this.getAttribute("client");if(Astro[c]===void 0){window.addEventListener(`astro:${c}`,()=>this.start(),{once:!0});return}try{await Astro[c](async()=>{let n=this.getAttribute("renderer-url"),[h,{default:p}]=await Promise.all([import(this.getAttribute("component-url")),n?import(n):()=>()=>{}]),u=this.getAttribute("component-export")||"default";if(!u.includes("."))this.Component=h[u];else{this.Component=h;for(let f of u.split("."))this.Component=this.Component[f]}return this.hydrator=p,this.hydrate},e,this)}catch(n){console.error(`[astro-island] Error hydrating ${this.getAttribute("component-url")}`,n)}}attributeChangedCallback(){this.hydrate()}}d(y,"observedAttributes",["props"]),customElements.get("astro-island")||customElements.define("astro-island",y)}})();</script><astro-island uid="Z2bF5p5" prefix="s0" component-url="https://uxbot-prod-public.s3.cn-north-1.amazonaws.com.cn/html/106422/CommonHeader.BGdYSxYZ.js" component-export="default" renderer-url="https://uxbot-prod-public.s3.cn-north-1.amazonaws.com.cn/html/106422/client.Cmt5bcL-.js" props="{}" ssr="" client="load" opts="{&amp;quot;name&amp;quot;:&amp;quot;CommonHeader&amp;quot;,&amp;quot;value&amp;quot;:true}" await-children=""><!--[--><header class="fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-background" data-source-file="src/components/common/CommonHeader.vue" data-source-line-start="51" data-source-line-end="122"><div class="container-custom" data-source-file="src/components/common/CommonHeader.vue" data-source-line-start="57" data-source-line-end="121"><div class="flex items-center justify-between h-16" data-source-file="src/components/common/CommonHeader.vue" data-source-line-start="58" data-source-line-end="120"><a href="./home.html" class="flex items-center space-x-2 group" data-source-file="src/components/common/CommonHeader.vue" data-source-line-start="60" data-source-line-end="65"><div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center transition-transform group-hover:scale-110" data-source-file="src/components/common/CommonHeader.vue" data-source-line-start="61" data-source-line-end="63"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" data-source-file="src/components/common/SafeIcon.vue" data-source-line-start="43" data-source-line-end="49" class="lucide lucide-leaf-icon lucide-leaf"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path></svg></div><span class="text-xl font-semibold text-foreground hidden sm:block" data-source-file="src/components/common/CommonHeader.vue" data-source-line-start="64" data-source-line-end="64">棠野仙踪</span></a><nav class="hidden md:flex items-center space-x-1" data-source-file="src/components/common/CommonHeader.vue" data-source-line-start="68" data-source-line-end="77"><!--[--><a href="./home.html" class="px-4 py-2 text-sm font-medium text-foreground/80 hover:text-foreground hover:bg-accent/50 rounded-lg transition-colors" data-source-file="src/components/common/CommonHeader.vue" data-source-line-start="69" data-source-line-end="76">首页</a><a href="./shop.html" class="px-4 py-2 text-sm font-medium text-foreground/80 hover:text-foreground hover:bg-accent/50 rounded-lg transition-colors" data-source-file="src/components/common/CommonHeader.vue" data-source-line-start="69" data-source-line-end="76">热植商城</a><a href="./plant-care-center.html" class="px-4 py-2 text-sm font-medium text-foreground/80 hover:text-foreground hover:bg-accent/50 rounded-lg transition-colors" data-source-file="src/components/common/CommonHeader.vue" data-source-line-start="69" data-source-line-end="76">养护知识</a><a href="./faq-search.html" class="px-4 py-2 text-sm font-medium text-foreground/80 hover:text-foreground hover:bg-accent/50 rounded-lg transition-colors" data-source-file="src/components/common/CommonHeader.vue" data-source-line-start="69" data-source-line-end="76">常见问题</a><!--]--></nav><div class="flex items-center space-x-2" data-source-file="src/components/common/CommonHeader.vue" data-source-line-start="80" data-source-line-end="119"><a class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;amp;_svg]:pointer-events-none [&amp;amp;_svg]:size-4 [&amp;amp;_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground h-10 w-10 relative !h-[62px] !w-[62px]" href="./shopping-cart.html" data-source-file="src/components/ui/button/Button.vue" data-source-line-start="21" data-source-line-end="27"><!--[--><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-source-file="src/components/common/SafeIcon.vue" data-source-line-start="43" data-source-line-end="49" class="lucide lucide-shopping-cart-icon lucide-shopping-cart"><circle cx="8" cy="21" r="1"></circle><circle cx="19" cy="21" r="1"></circle><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path></svg><!----><!--]--></a><!--[--><!--[--><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;amp;_svg]:pointer-events-none [&amp;amp;_svg]:size-4 [&amp;amp;_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground h-10 w-10 md:hidden !h-[62px] !w-[62px]" type="button" aria-haspopup="dialog" aria-expanded="false" data-state="closed" data-source-file="src/components/ui/button/Button.vue" data-source-line-start="21" data-source-line-end="27"><!--[--><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-source-file="src/components/common/SafeIcon.vue" data-source-line-start="43" data-source-line-end="49" class="lucide lucide-menu-icon lucide-menu"><path d="M4 5h16"></path><path d="M4 12h16"></path><path d="M4 19h16"></path></svg><!--]--></button><!--v-if--><!--]--><!--]--></div></div></div></header><div class="h-16" data-source-file="src/components/common/CommonHeader.vue" data-source-line-start="125" data-source-line-end="125"></div><!--]--><!--astro:end--></astro-island>
+  
+  <main data-source-file="src/pages/faq-search.astro" data-source-line-start="13" data-source-line-end="44" class="min-h-screen flex flex-col">
+    <div data-source-file="src/pages/faq-search.astro" data-source-line-start="14" data-source-line-end="40" class="flex-1">
+      <!-- Hero Section -->
+      <section data-source-file="src/pages/faq-search.astro" data-source-line-start="16" data-source-line-end="25" class="bg-gradient-to-b from-accent/30 to-background py-12">
+        <div data-source-file="src/pages/faq-search.astro" data-source-line-start="17" data-source-line-end="24" class="container-custom">
+          <div data-source-file="src/pages/faq-search.astro" data-source-line-start="18" data-source-line-end="23" class="text-center space-y-4">
+            <h1 data-source-file="src/pages/faq-search.astro" data-source-line-start="19" data-source-line-end="19" class="text-4xl font-bold text-foreground">常见问题与自助支持</h1>
+            <p data-source-file="src/pages/faq-search.astro" data-source-line-start="20" data-source-line-end="22" class="text-lg text-muted-foreground max-w-2xl mx-auto">
+              快速查找答案，解决您在绿植养护中遇到的各种问题
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Search &amp; Filter Section -->
+      <section data-source-file="src/pages/faq-search.astro" data-source-line-start="28" data-source-line-end="32" class="py-8 border-b border-border">
+        <div data-source-file="src/pages/faq-search.astro" data-source-line-start="29" data-source-line-end="31" class="container-custom">
+          <astro-island uid="Z2q5xqH" prefix="s1" component-url="https://uxbot-prod-public.s3.cn-north-1.amazonaws.com.cn/html/106422/FAQSearchHeader.D4GeYlQL.js" component-export="default" renderer-url="https://uxbot-prod-public.s3.cn-north-1.amazonaws.com.cn/html/106422/client.Cmt5bcL-.js" props="{}" ssr="" client="load" opts="{&amp;quot;name&amp;quot;:&amp;quot;FAQSearchHeader&amp;quot;,&amp;quot;value&amp;quot;:true}" await-children=""><div class="space-y-6" data-source-file="src/components/faq-search/FAQSearchHeader.vue" data-source-line-start="53" data-source-line-end="94"><div class="relative" data-source-file="src/components/faq-search/FAQSearchHeader.vue" data-source-line-start="55" data-source-line-end="66"><div class="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" data-source-file="src/components/faq-search/FAQSearchHeader.vue" data-source-line-start="56" data-source-line-end="58"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-source-file="src/components/common/SafeIcon.vue" data-source-line-start="43" data-source-line-end="49" class="lucide lucide-search-icon lucide-search"><path d="m21 21-4.34-4.34"></path><circle cx="11" cy="11" r="8"></circle></svg></div><input class="flex h-10 w-full rounded-md border border-input bg-background px-3 ring-offset-background file:border-0 file:bg-transparent file:text-foreground file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pl-12 pr-4 py-3 text-base" type="text" placeholder="搜索问题关键词... 如 &#39;黄叶&#39;、&#39;浇水&#39;、&#39;烂根&#39;" data-source-file="src/components/ui/input/Input.vue" data-source-line-start="23" data-source-line-end="23" value=""></div><div class="flex flex-wrap gap-3" data-source-file="src/components/faq-search/FAQSearchHeader.vue" data-source-line-start="69" data-source-line-end="84"><!--[--><button class="flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 bg-primary text-primary-foreground shadow-soft" data-source-file="src/components/faq-search/FAQSearchHeader.vue" data-source-line-start="70" data-source-line-end="83"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-source-file="src/components/common/SafeIcon.vue" data-source-line-start="43" data-source-line-end="49" class="lucide lucide-list-filter-icon lucide-list-filter"><path d="M2 5h20"></path><path d="M6 12h12"></path><path d="M9 19h6"></path></svg><span class="text-sm font-medium" data-source-file="src/components/faq-search/FAQSearchHeader.vue" data-source-line-start="82" data-source-line-end="82">全部问题</span></button><button class="flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 bg-muted text-muted-foreground hover:bg-muted/80" data-source-file="src/components/faq-search/FAQSearchHeader.vue" data-source-line-start="70" data-source-line-end="83"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-source-file="src/components/common/SafeIcon.vue" data-source-line-start="43" data-source-line-end="49" class="lucide lucide-heart-icon lucide-heart"><path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5"></path></svg><span class="text-sm font-medium" data-source-file="src/components/faq-search/FAQSearchHeader.vue" data-source-line-start="82" data-source-line-end="82">植物健康</span></button><button class="flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 bg-muted text-muted-foreground hover:bg-muted/80" data-source-file="src/components/faq-search/FAQSearchHeader.vue" data-source-line-start="70" data-source-line-end="83"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-source-file="src/components/common/SafeIcon.vue" data-source-line-start="43" data-source-line-end="49" class="lucide lucide-book-open-icon lucide-book-open"><path d="M12 7v14"></path><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"></path></svg><span class="text-sm font-medium" data-source-file="src/components/faq-search/FAQSearchHeader.vue" data-source-line-start="82" data-source-line-end="82">养护指南</span></button><button class="flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 bg-muted text-muted-foreground hover:bg-muted/80" data-source-file="src/components/faq-search/FAQSearchHeader.vue" data-source-line-start="70" data-source-line-end="83"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-source-file="src/components/common/SafeIcon.vue" data-source-line-start="43" data-source-line-end="49" class="lucide lucide-package-icon lucide-package"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"></path><path d="M12 22V12"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><path d="m7.5 4.27 9 5.15"></path></svg><span class="text-sm font-medium" data-source-file="src/components/faq-search/FAQSearchHeader.vue" data-source-line-start="82" data-source-line-end="82">配送售后</span></button><!--]--></div><div class="flex items-start gap-3 p-4 bg-accent/10 rounded-lg border border-accent/20" data-source-file="src/components/faq-search/FAQSearchHeader.vue" data-source-line-start="87" data-source-line-end="93"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide text-accent-foreground flex-shrink-0 mt-0.5 lucide-lightbulb-icon lucide-lightbulb text-accent-foreground flex-shrink-0 mt-0.5" data-source-file="src/components/common/SafeIcon.vue" data-source-line-start="43" data-source-line-end="49"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"></path><path d="M9 18h6"></path><path d="M10 22h4"></path></svg><div class="text-sm text-muted-foreground" data-source-file="src/components/faq-search/FAQSearchHeader.vue" data-source-line-start="89" data-source-line-end="92"><p class="font-medium text-foreground mb-1" data-source-file="src/components/faq-search/FAQSearchHeader.vue" data-source-line-start="90" data-source-line-end="90">搜索提示：</p><p data-source-file="src/components/faq-search/FAQSearchHeader.vue" data-source-line-start="91" data-source-line-end="91">输入关键词如"黄叶"、"浇水频率"、"运输损伤"等，快速找到相关答案</p></div></div></div><!--astro:end--></astro-island>
+        </div>
+      </section>
+
+      <!-- FAQ List Section -->
+      <section data-source-file="src/pages/faq-search.astro" data-source-line-start="35" data-source-line-end="39" class="py-12">
+        <div data-source-file="src/pages/faq-search.astro" data-source-line-start="36" data-source-line-end="38" class="container-custom">
+          <astro-island uid="ed1MJ" prefix="s2" component-url="https://uxbot-prod-public.s3.cn-north-1.amazonaws.com.cn/html/106422/FAQAccordionList.Dn91jeKp.js" component-export="default" renderer-url="https://uxbot-prod-public.s3.cn-north-1.amazonaws.com.cn/html/106422/client.Cmt5bcL-.js" props="{}" ssr="" client="load" opts="{&amp;quot;name&amp;quot;:&amp;quot;FAQAccordionList&amp;quot;,&amp;quot;value&amp;quot;:true}" await-children=""><div class="space-y-6" data-source-file="src/components/faq-search/FAQAccordionList.vue" data-source-line-start="92" data-source-line-end="197"><div class="flex items-center justify-between" data-source-file="src/components/faq-search/FAQAccordionList.vue" data-source-line-start="94" data-source-line-end="103"><div data-source-file="src/components/faq-search/FAQAccordionList.vue" data-source-line-start="95" data-source-line-end="102"><h2 class="text-2xl font-semibold text-foreground" data-source-file="src/components/faq-search/FAQAccordionList.vue" data-source-line-start="96" data-source-line-end="98">全部问题</h2><p class="text-sm text-muted-foreground mt-1" data-source-file="src/components/faq-search/FAQAccordionList.vue" data-source-line-start="99" data-source-line-end="101"> 共 2 个问题 </p></div></div><div class="space-y-3" data-source-file="src/components/faq-search/FAQAccordionList.vue" data-source-line-start="106" data-source-line-end="155"><div class="w-full space-y-3" data-source-file="src/components/ui/accordion/Accordion.vue" data-source-line-start="16" data-source-line-end="18"><!--[--><!--[--><!--[--><div data-state="closed" data-orientation="vertical" class="border border-border rounded-lg px-6 py-4 data-[state=open]:bg-accent/5 transition-colors" data-source-file="src/components/ui/accordion/AccordionItem.vue" data-source-line-start="16" data-source-line-end="21"><!--[--><!--[--><!--[--><h3 data-orientation="vertical" data-state="closed" class="flex" data-source-file="src/components/ui/accordion/AccordionTrigger.vue" data-source-line-start="19" data-source-line-end="36"><!--[--><button type="button" aria-controls="" aria-expanded="false" data-state="closed" id="reka-accordion-trigger-s2-0" data-reka-collection-item="" data-orientation="vertical" class="flex flex-1 items-center justify-between font-medium transition-all [&amp;amp;[data-state=open]&amp;gt;svg]:rotate-180 hover:no-underline py-0" data-source-file="src/components/ui/accordion/AccordionTrigger.vue" data-source-line-start="20" data-source-line-end="35"><!--[--><!--[--><!--[--><div class="flex items-start gap-4 text-left flex-1" data-source-file="src/components/faq-search/FAQAccordionList.vue" data-source-line-start="115" data-source-line-end="130"><div class="flex-1 space-y-2" data-source-file="src/components/faq-search/FAQAccordionList.vue" data-source-line-start="116" data-source-line-end="129"><div class="flex items-center gap-3" data-source-file="src/components/faq-search/FAQAccordionList.vue" data-source-line-start="117" data-source-line-end="128"><h3 class="text-base font-medium text-foreground" data-source-file="src/components/faq-search/FAQAccordionList.vue" data-source-line-start="118" data-source-line-end="120">为什么我的植物叶子边缘发干焦枯？</h3><div class="inline-flex gap-1 items-center rounded-full border px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-secondary/80 bg-red-100 text-red-700 text-xs" data-source-file="src/components/ui/badge/Badge.vue" data-source-line-start="14" data-source-line-end="16"><!--[-->植物健康<!--]--></div></div></div></div><!--]--><!--[--><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4 shrink-0 transition-transform duration-200 lucide-chevron-down-icon lucide-chevron-down h-4 w-4 shrink-0 transition-transform duration-200" data-source-file="src/components/ui/accordion/AccordionTrigger.vue" data-source-line-start="31" data-source-line-end="33"><path d="m6 9 6 6 6-6"></path></svg><!--]--><!--]--><!--]--></button><!--]--></h3><div role="region" aria-labelledby="reka-accordion-trigger-s2-0" data-state="closed" data-orientation="vertical" style="--reka-accordion-content-width:var(--reka-collapsible-content-width);--reka-accordion-content-height:var(--reka-collapsible-content-height);--reka-collapsible-content-height:0px;--reka-collapsible-content-width:0px;" class="overflow-hidden text-sm transition-all data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down" data-source-file="src/components/ui/accordion/AccordionContent.vue" data-source-line-start="14" data-source-line-end="21" id="reka-collapsible-content-s2-1" hidden=""><!--v-if--></div><!--]--><!--]--><!--]--></div><div data-state="closed" data-orientation="vertical" class="border border-border rounded-lg px-6 py-4 data-[state=open]:bg-accent/5 transition-colors" data-source-file="src/components/ui/accordion/AccordionItem.vue" data-source-line-start="16" data-source-line-end="21"><!--[--><!--[--><!--[--><h3 data-orientation="vertical" data-state="closed" class="flex" data-source-file="src/components/ui/accordion/AccordionTrigger.vue" data-source-line-start="19" data-source-line-end="36"><!--[--><button type="button" aria-controls="" aria-expanded="false" data-state="closed" id="reka-accordion-trigger-s2-2" data-reka-collection-item="" data-orientation="vertical" class="flex flex-1 items-center justify-between font-medium transition-all [&amp;amp;[data-state=open]&amp;gt;svg]:rotate-180 hover:no-underline py-0" data-source-file="src/components/ui/accordion/AccordionTrigger.vue" data-source-line-start="20" data-source-line-end="35"><!--[--><!--[--><!--[--><div class="flex items-start gap-4 text-left flex-1" data-source-file="src/components/faq-search/FAQAccordionList.vue" data-source-line-start="115" data-source-line-end="130"><div class="flex-1 space-y-2" data-source-file="src/components/faq-search/FAQAccordionList.vue" data-source-line-start="116" data-source-line-end="129"><div class="flex items-center gap-3" data-source-file="src/components/faq-search/FAQAccordionList.vue" data-source-line-start="117" data-source-line-end="128"><h3 class="text-base font-medium text-foreground" data-source-file="src/components/faq-search/FAQAccordionList.vue" data-source-line-start="118" data-source-line-end="120">刚收到绿植需要马上换盆吗？</h3><div class="inline-flex gap-1 items-center rounded-full border px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-secondary/80 bg-blue-100 text-blue-700 text-xs" data-source-file="src/components/ui/badge/Badge.vue" data-source-line-start="14" data-source-line-end="16"><!--[-->养护指南<!--]--></div></div></div></div><!--]--><!--[--><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide h-4 w-4 shrink-0 transition-transform duration-200 lucide-chevron-down-icon lucide-chevron-down h-4 w-4 shrink-0 transition-transform duration-200" data-source-file="src/components/ui/accordion/AccordionTrigger.vue" data-source-line-start="31" data-source-line-end="33"><path d="m6 9 6 6 6-6"></path></svg><!--]--><!--]--><!--]--></button><!--]--></h3><div role="region" aria-labelledby="reka-accordion-trigger-s2-2" data-state="closed" data-orientation="vertical" style="--reka-accordion-content-width:var(--reka-collapsible-content-width);--reka-accordion-content-height:var(--reka-collapsible-content-height);--reka-collapsible-content-height:0px;--reka-collapsible-content-width:0px;" class="overflow-hidden text-sm transition-all data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down" data-source-file="src/components/ui/accordion/AccordionContent.vue" data-source-line-start="14" data-source-line-end="21" id="reka-collapsible-content-s2-3" hidden=""><!--v-if--></div><!--]--><!--]--><!--]--></div><!--]--><!--]--><!--]--></div></div><div class="mt-12 p-6 bg-secondary/30 rounded-lg border border-secondary/50" data-source-file="src/components/faq-search/FAQAccordionList.vue" data-source-line-start="168" data-source-line-end="196"><div class="flex gap-4" data-source-file="src/components/faq-search/FAQAccordionList.vue" data-source-line-start="169" data-source-line-end="195"><div class="flex-shrink-0" data-source-file="src/components/faq-search/FAQAccordionList.vue" data-source-line-start="170" data-source-line-end="172"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide text-secondary-foreground lucide-message-circle-icon lucide-message-circle text-secondary-foreground" data-source-file="src/components/common/SafeIcon.vue" data-source-line-start="43" data-source-line-end="49"><path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"></path></svg></div><div class="space-y-2" data-source-file="src/components/faq-search/FAQAccordionList.vue" data-source-line-start="173" data-source-line-end="194"><h3 class="font-semibold text-foreground" data-source-file="src/components/faq-search/FAQAccordionList.vue" data-source-line-start="174" data-source-line-end="174">还有其他问题？</h3><p class="text-sm text-muted-foreground mb-3" data-source-file="src/components/faq-search/FAQAccordionList.vue" data-source-line-start="175" data-source-line-end="177"> 如果您没有找到答案，欢迎通过以下方式联系我们的客服团队 </p><div class="flex flex-wrap gap-3" data-source-file="src/components/faq-search/FAQAccordionList.vue" data-source-line-start="178" data-source-line-end="193"><a href="tel:400-123-4567" class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium" data-source-file="src/components/faq-search/FAQAccordionList.vue" data-source-line-start="179" data-source-line-end="185"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-source-file="src/components/common/SafeIcon.vue" data-source-line-start="43" data-source-line-end="49" class="lucide lucide-phone-icon lucide-phone"><path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"></path></svg> 拨打客服电话 </a><a href="./home.html#contact" class="inline-flex items-center gap-2 px-4 py-2 bg-accent text-accent-foreground rounded-lg hover:bg-accent/90 transition-colors text-sm font-medium" data-source-file="src/components/faq-search/FAQAccordionList.vue" data-source-line-start="186" data-source-line-end="192"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-source-file="src/components/common/SafeIcon.vue" data-source-line-start="43" data-source-line-end="49" class="lucide lucide-mail-icon lucide-mail"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"></path><rect x="2" y="4" width="20" height="16" rx="2"></rect></svg> 发送邮件咨询 </a></div></div></div></div></div><!--astro:end--></astro-island>
+        </div>
+      </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-card border-t border-border mt-auto" data-source-file="src/components/common/CommonFooter.vue" data-source-line-start="32" data-source-line-end="105"><div class="container-custom py-12" data-source-file="src/components/common/CommonFooter.vue" data-source-line-start="34" data-source-line-end="93"><div class="grid grid-cols-1 md:grid-cols-3 gap-8" data-source-file="src/components/common/CommonFooter.vue" data-source-line-start="35" data-source-line-end="82"><div class="space-y-4" data-source-file="src/components/common/CommonFooter.vue" data-source-line-start="37" data-source-line-end="48"><div class="flex items-center space-x-2" data-source-file="src/components/common/CommonFooter.vue" data-source-line-start="38" data-source-line-end="43"><div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center" data-source-file="src/components/common/CommonFooter.vue" data-source-line-start="39" data-source-line-end="41"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" data-source-file="src/components/common/SafeIcon.vue" data-source-line-start="43" data-source-line-end="49" class="lucide lucide-leaf-icon lucide-leaf"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path></svg></div><span class="text-xl font-semibold text-foreground" data-source-file="src/components/common/CommonFooter.vue" data-source-line-start="42" data-source-line-end="42">棠野仙踪</span></div><p class="text-sm text-muted-foreground leading-relaxed" data-source-file="src/components/common/CommonFooter.vue" data-source-line-start="44" data-source-line-end="47"> 专注原生秋海棠与精品绿植<br data-source-file="src/components/common/CommonFooter.vue" data-source-line-start="45" data-source-line-end="45"> 与自然相拥,把绿意带回家 </p></div><div class="space-y-4" data-source-file="src/components/common/CommonFooter.vue" data-source-line-start="51" data-source-line-end="63"><h3 class="text-sm font-semibold text-foreground" data-source-file="src/components/common/CommonFooter.vue" data-source-line-start="52" data-source-line-end="52">快速导航</h3><ul class="space-y-2" data-source-file="src/components/common/CommonFooter.vue" data-source-line-start="53" data-source-line-end="62"><!--[--><li data-source-file="src/components/common/CommonFooter.vue" data-source-line-start="54" data-source-line-end="61"><a href="./home.html#about" class="text-sm text-muted-foreground hover:text-foreground transition-colors" data-source-file="src/components/common/CommonFooter.vue" data-source-line-start="55" data-source-line-end="60">关于我们</a></li><li data-source-file="src/components/common/CommonFooter.vue" data-source-line-start="54" data-source-line-end="61"><a href="./plant-care-center.html" class="text-sm text-muted-foreground hover:text-foreground transition-colors" data-source-file="src/components/common/CommonFooter.vue" data-source-line-start="55" data-source-line-end="60">养护知识</a></li><li data-source-file="src/components/common/CommonFooter.vue" data-source-line-start="54" data-source-line-end="61"><a href="./faq-search.html" class="text-sm text-muted-foreground hover:text-foreground transition-colors" data-source-file="src/components/common/CommonFooter.vue" data-source-line-start="55" data-source-line-end="60">常见问题</a></li><li data-source-file="src/components/common/CommonFooter.vue" data-source-line-start="54" data-source-line-end="61"><a href="./home.html#contact" class="text-sm text-muted-foreground hover:text-foreground transition-colors" data-source-file="src/components/common/CommonFooter.vue" data-source-line-start="55" data-source-line-end="60">联系我们</a></li><!--]--></ul></div><div class="space-y-4" data-source-file="src/components/common/CommonFooter.vue" data-source-line-start="66" data-source-line-end="81"><h3 class="text-sm font-semibold text-foreground" data-source-file="src/components/common/CommonFooter.vue" data-source-line-start="67" data-source-line-end="67">联系方式</h3><div class="space-y-3" data-source-file="src/components/common/CommonFooter.vue" data-source-line-start="68" data-source-line-end="80"><!--[--><a href="mailto:1624891330@qq.com" class="flex items-center space-x-2 text-sm text-muted-foreground hover:text-foreground transition-colors group" data-source-file="src/components/common/CommonFooter.vue" data-source-line-start="69" data-source-line-end="79"><div class="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center group-hover:bg-accent/40 transition-colors" data-source-file="src/components/common/CommonFooter.vue" data-source-line-start="75" data-source-line-end="77"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-source-file="src/components/common/SafeIcon.vue" data-source-line-start="43" data-source-line-end="49" class="lucide lucide-mail-icon lucide-mail"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"></path><rect x="2" y="4" width="20" height="16" rx="2"></rect></svg></div><span data-source-file="src/components/common/CommonFooter.vue" data-source-line-start="78" data-source-line-end="78">邮箱：1624891330@qq.com</span></a><!--]--></div></div></div><div data-orientation="horizontal" role="none" class="shrink-0 bg-border h-px w-full my-8" data-source-file="src/components/ui/separator/Separator.vue" data-source-line-start="19" data-source-line-end="28"><!--[--><!--]--></div><div class="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground" data-source-file="src/components/common/CommonFooter.vue" data-source-line-start="86" data-source-line-end="92"><p data-source-file="src/components/common/CommonFooter.vue" data-source-line-start="87" data-source-line-end="87">© 2026 棠野仙踪. 保留所有权利.</p><div class="flex items-center gap-4" data-source-file="src/components/common/CommonFooter.vue" data-source-line-start="88" data-source-line-end="91"><a href="#" class="hover:text-foreground transition-colors" data-source-file="src/components/common/CommonFooter.vue" data-source-line-start="89" data-source-line-end="89">隐私政策</a><a href="#" class="hover:text-foreground transition-colors" data-source-file="src/components/common/CommonFooter.vue" data-source-line-start="90" data-source-line-end="90">服务条款</a></div></div></div></footer>
+  </main>
+
+  <script>
+    const originalBack = window.history.back
+    const originalForward = window.history.forward
+    const originalGo = window.history.go
+    function isValidNavigation(){
+      if(!window.parent.history.state.back || !window.parent.history.state.back.startsWith(&#39;/designPage&#39;)){
+        return false
+      }
+      return true
+    }
+    window.history.back = function(...args) {
+      if(!isValidNavigation()){
+        return
+      }
+      return originalBack.apply(this, args);
+    };
+
+    window.history.forward = function(...args) {
+      if(!isValidNavigation()){
+        return
+      }
+      return originalForward.apply(this, args);
+    };
+
+    window.history.go = function(...args) {
+      if(!isValidNavigation()){
+        return
+      }
+      return originalGo.apply(this, args);
+    };
+  </script></body></html>'></iframe>
+                    </div>
+                  </div>
+
+                </body>
+                </html>
+            
